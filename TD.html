@@ -969,11 +969,12 @@ function beginActualGame() {
     playerStats.orbitalLevel = 0;
     playerStats.toxicTrail = false;
     
+    // 應用永久升級（先應用升級，再設定 HP）
+    applyMetaUpgrades();
+    
+    // 應用升級後設定滿血
     player.hp = player.maxHp;
     core.hp = core.maxHp;
-    
-    // 應用永久升級
-    applyMetaUpgrades();
     
     // 應用一次性解鎖效果
     if (metaSystem.upgrades.startWalls) {
@@ -1044,13 +1045,15 @@ function applyMetaUpgrades() {
     soulMultiplier = 1.0;
     upgradeCardCount = metaSystem.upgrades.extraCardSlot ? 4 : 3;
     
+    // 重置 HP 回初始值（第二輪之後會重複應用升級，需要先重置）
+    player.maxHp = 100;
+    core.maxHp = 1000;
+    
     // 應用可疊加升級
     playerStats.damageMultiplier *= Math.pow(1.05, metaSystem.upgrades.powerStacking);
     playerStats.moveSpeedMultiplier *= Math.pow(1.05, metaSystem.upgrades.speedStacking);
     player.maxHp += metaSystem.upgrades.healthStacking * 10;
-    player.hp = player.maxHp;
     core.maxHp += metaSystem.upgrades.coreHealthStacking * 50;
-    core.hp = core.maxHp;
     startingGold += metaSystem.upgrades.goldStacking * 5;
     soulMultiplier *= Math.pow(1.1, metaSystem.upgrades.soulStacking);
     
