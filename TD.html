@@ -1069,6 +1069,18 @@ function loadMetaProgress() {
         metaSystem.stats = { ...metaSystem.stats, ...data.stats };
     }
     applyMetaUpgrades();
+    // Convenience for testing: grant extra souls via URL parameter ?grantSouls=500
+    try {
+        const params = new URLSearchParams(location.search);
+        const amt = parseInt(params.get('grantSouls') || '', 10);
+        if (!isNaN(amt) && amt > 0) {
+            metaSystem.souls += amt;
+            saveMetaProgress();
+            console.log('[TEST] Grant souls', amt, 'new total:', metaSystem.souls);
+        }
+    } catch (e) {
+        // ignore
+    }
 }
 
 function applyMetaUpgrades() {
