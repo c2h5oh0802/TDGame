@@ -1078,6 +1078,14 @@ function loadMetaProgress() {
             saveMetaProgress();
             console.log('[TEST] Grant souls', amt, 'new total:', metaSystem.souls);
         }
+        // Local one-time test grant (no push): 500 souls
+        if (!sessionStorage.getItem('metagrant500_done')) {
+            const testAmt = 500;
+            metaSystem.souls += testAmt;
+            saveMetaProgress();
+            sessionStorage.setItem('metagrant500_done', '1');
+            console.log('[TEST] Local testing: granted', testAmt, 'souls');
+        }
     } catch (e) {
         // ignore
     }
