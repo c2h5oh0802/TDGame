@@ -942,6 +942,7 @@ function beginActualGame() {
     currentWave = 1;
     damageStats = {};
     currentRunSouls = 0;
+    gameLoopStarted = false;  // 重置遊戲循環標記，允許 startGameLoop() 再次執行
     
     // 重置玩家、核心、敵人等狀態
     playerStats.damageMultiplier = 1.0;
