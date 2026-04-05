@@ -944,6 +944,27 @@ function beginActualGame() {
     currentRunSouls = 0;
     gameLoopStarted = false;  // 重置遊戲循環標記，允許 startGameLoop() 再次執行
     
+    // 重置 UI 互動狀態
+    hoveredBuilding = null;
+    hoverTimer = 0;
+    nearestInteractable = null;
+    
+    // 重置視覺效果
+    particles = [];
+    
+    // 重置尋路系統
+    flowField.clear();
+    needsFlowFieldUpdate = true;
+    
+    // 重置波數/Boss 狀態
+    bossSpawned = false;
+    
+    // 重置計時器
+    statsUpdateTimer = 0;
+    
+    // 清空建造隊列（會在下方重新添加起始建築）
+    buildQueue = [];
+    
     // 重置玩家、核心、敵人等狀態
     playerStats.damageMultiplier = 1.0;
     playerStats.attackSpeedMultiplier = 1.0;
