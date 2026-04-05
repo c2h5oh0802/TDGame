@@ -637,7 +637,7 @@ let upgradeCardCount = 3;   // 升級卡數量（預設 3 個）
 let currentRunSouls = 0;    // 本局獲得的靈魂
 
 // 傷害統計系統
-const damageStats = {};
+let damageStats = {};
 const sourceNames = {
     'player': '🟣 魔王 (玩家)',
     'turret': '🏹 弩砲塔',
@@ -948,12 +948,17 @@ function beginActualGame() {
     hoveredBuilding = null;
     hoverTimer = 0;
     nearestInteractable = null;
+
+    // 重置當前建造類型（重新開始時清空建造操作）
+    currentBuildType = null;
     
     // 重置視覺效果
     particles = [];
     
     // 重置尋路系統
-    flowField.clear();
+    if (typeof flowField !== 'undefined' && flowField && typeof flowField.clear === 'function') {
+        flowField.clear();
+    }
     needsFlowFieldUpdate = true;
     
     // 重置波數/Boss 狀態
@@ -1019,6 +1024,11 @@ function beginActualGame() {
     trailPools = [];
     
     updateUI();
+    // 重置畫面視角與立即畫面刷新，避免第二輪起始時畫面卡死
+    if (typeof camera !== 'undefined' && camera.update) {
+        camera.update(player.x, player.y);
+        draw();
+    }
     document.getElementById('ui-layer').classList.remove('hidden');
     currentState = GAME_STATE.PLAYING;
     lastTime = performance.now();
