@@ -210,14 +210,27 @@
     <!-- 開始畫面 -->
     <div id="start-screen" class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-900 via-black to-black flex flex-col items-center justify-center pointer-events-auto z-50">
         <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-600 mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">魔王守衛戰：流派覺醒</h1>
-        <p class="text-gray-400 text-lg mb-8 max-w-2xl text-center leading-relaxed">
+        <p class="text-gray-400 text-lg mb-6 max-w-2xl text-center leading-relaxed">
             勇者軍團兵臨城下。<br>
             利用防禦工事、工人群與深淵魔法保護核心。<br>
-            你將成為元素法師？還是招喚死靈大軍？<br>撐過 20 分鐘，擊退冒險者，讓世界再次陷入絕望！
+            你將成為元素法師？還是招喚死靈大軍？<br>撐過 20 波，擊退冒險者，讓世界再次陷入絕望！
         </p>
-        <button onclick="startGame()" class="px-10 py-4 bg-purple-700 hover:bg-purple-600 text-white text-2xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
-            開始守衛
-        </button>
+        
+        <!-- 靈魂顯示 -->
+        <div class="flex items-center space-x-2 bg-purple-900/40 px-5 py-2 rounded-full border border-purple-600 mb-6">
+            <span class="text-2xl">👻</span>
+            <span id="start-soul-count" class="text-xl font-bold text-purple-300">0</span>
+            <span class="text-purple-400 text-sm">靈魂</span>
+        </div>
+        
+        <div class="flex flex-col space-y-3">
+            <button onclick="startGame()" class="px-10 py-4 bg-purple-700 hover:bg-purple-600 text-white text-2xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
+                開始守衛
+            </button>
+            <button onclick="openSoulShop()" class="px-10 py-3 bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600 text-white text-lg font-bold rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all transform hover:scale-105 border border-indigo-400">
+                👻 靈魂商店
+            </button>
+        </div>
     </div>
 
     <!-- 升級畫面 -->
@@ -260,6 +273,18 @@
             <h1 id="overlay-title" class="text-5xl font-black mb-2"></h1>
             <p id="overlay-desc" class="text-gray-300 text-lg mb-6"></p>
             
+            <!-- 靈魂獲取區塊 -->
+            <div id="soul-reward-container" class="w-full bg-gradient-to-r from-purple-900/60 to-indigo-900/60 rounded-xl p-4 mb-4 border border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)] hidden">
+                <div class="flex items-center justify-center space-x-4">
+                    <span class="text-4xl">👻</span>
+                    <div>
+                        <div class="text-purple-300 text-sm font-bold">獲得靈魂</div>
+                        <div id="soul-reward-amount" class="text-4xl font-black text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">+0</div>
+                    </div>
+                </div>
+                <div id="soul-breakdown" class="text-xs text-gray-400 mt-2 text-center"></div>
+            </div>
+            
             <!-- 結算統計數據區塊 -->
             <div id="final-stats-container" class="w-full bg-gray-800/80 rounded-xl p-5 mb-6 text-left border border-gray-600 hidden shadow-inner">
                 <div class="grid grid-cols-2 gap-4 mb-4 border-b border-gray-600 pb-4">
@@ -284,9 +309,69 @@
                 </div>
             </div>
 
-            <button onclick="restartGame()" class="px-12 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold rounded-xl transition-all transform hover:scale-105 border-2 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                重新輪迴
-            </button>
+            <div class="flex space-x-4">
+                <button onclick="openSoulShop()" class="px-8 py-4 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white text-xl font-bold rounded-xl transition-all transform hover:scale-105 border-2 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    👻 靈魂商店
+                </button>
+                <button onclick="restartGame()" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold rounded-xl transition-all transform hover:scale-105 border-2 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    重新輪迴
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 靈魂商店畫面 -->
+    <div id="soul-shop-overlay" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center hidden pointer-events-auto z-50 overflow-y-auto py-8">
+        <div class="bg-gray-900 p-8 rounded-2xl border-2 border-purple-600 shadow-[0_0_40px_rgba(168,85,247,0.5)] max-w-4xl w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">👻 靈魂商店</h2>
+                <div class="flex items-center space-x-2 bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500">
+                    <span class="text-2xl">👻</span>
+                    <span id="shop-soul-count" class="text-2xl font-bold text-purple-300">0</span>
+                </div>
+            </div>
+
+            <!-- 可疊加升級 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-yellow-400 mb-3 border-b border-yellow-600 pb-2">⬆️ 永久強化 (可疊加)</h3>
+                <div id="stackable-upgrades" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                </div>
+            </div>
+
+            <!-- 一次性解鎖 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-cyan-400 mb-3 border-b border-cyan-600 pb-2">🔓 永久解鎖 (一次性)</h3>
+                <div id="unlock-upgrades" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                </div>
+            </div>
+
+            <!-- 統計 -->
+            <div class="bg-gray-800/50 rounded-lg p-4 mb-6 border border-gray-700">
+                <h3 class="text-lg font-bold text-gray-300 mb-2">📊 歷史紀錄</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-gray-500 text-sm">總遊玩次數</div>
+                        <div id="stat-total-runs" class="text-xl font-bold text-white">0</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-sm">最高波數</div>
+                        <div id="stat-best-wave" class="text-xl font-bold text-yellow-400">0</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-sm">總擊殺數</div>
+                        <div id="stat-total-kills" class="text-xl font-bold text-red-400">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeSoulShop()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white text-lg font-bold rounded-xl transition-all border border-gray-500">
+                    返回
+                </button>
+                <button onclick="resetMetaProgress()" class="px-6 py-3 bg-red-900/50 hover:bg-red-800/50 text-red-400 text-sm font-bold rounded-xl transition-all border border-red-700">
+                    重置進度
+                </button>
+            </div>
         </div>
     </div>
 
@@ -496,7 +581,60 @@ let totalKills = 0;
 let totalPlayTime = 0;
 
 // 小兵模式切換
-let minionMode = 'attack'; 
+let minionMode = 'attack';
+
+// ======================== ROGUELITE META 系統 ========================
+// 靈魂貨幣與永久升級
+const metaSystem = {
+    souls: 0,  // 玩家擁有的靈魂
+    upgrades: {
+        // 可疊加升級
+        powerStacking: 0,      // 魔王之力 +5% 攻擊力
+        speedStacking: 0,      // 魔王之速 +5% 移速
+        healthStacking: 0,     // 魔王之心 +10 HP
+        coreHealthStacking: 0, // 核心強化 +50 HP
+        goldStacking: 0,       // 財富積累 +5 開局金幣
+        soulStacking: 0,       // 靈魂吸收 +10% 靈魂獲取
+        
+        // 一次性解鎖
+        startWalls: false,     // 起始建築：木牆×3
+        startTurret: false,    // 起始建築：弩砲塔
+        extraCardSlot: false,  // 魔法精通：升級時額外 +1 魔法卡
+        extraMinionMax: false, // 召喚精通：小兵上限 +1
+        luckyBlessing: false,  // 幸運祝福：稀有卡機率 +10%
+        endlessMode: false,    // 無盡挑戰：解鎖無盡模式
+    },
+    stats: {
+        totalRuns: 0,          // 總遊玩次數
+        bestWave: 0,           // 最高波數
+        totalKillsAllTime: 0,  // 歷史總擊殺
+    }
+};
+
+// 升級定義
+const metaUpgrades = {
+    stackable: [
+        { id: 'powerStacking', name: '魔王之力', desc: '+5% 攻擊力', icon: '⚔️', baseCost: 20, costGrowth: 15, effect: () => playerStats.damageMultiplier *= 1.05 },
+        { id: 'speedStacking', name: '魔王之速', desc: '+5% 移動速度', icon: '👟', baseCost: 20, costGrowth: 15, effect: () => playerStats.moveSpeedMultiplier *= 1.05 },
+        { id: 'healthStacking', name: '魔王之心', desc: '+10 最大 HP', icon: '❤️', baseCost: 25, costGrowth: 20, effect: () => { player.maxHp += 10; player.hp += 10; } },
+        { id: 'coreHealthStacking', name: '核心強化', desc: '+50 核心 HP', icon: '💎', baseCost: 30, costGrowth: 25, effect: () => { core.maxHp += 50; core.hp += 50; } },
+        { id: 'goldStacking', name: '財富積累', desc: '+5 開局金幣', icon: '🪙', baseCost: 35, costGrowth: 30, effect: () => { startingGold += 5; } },
+        { id: 'soulStacking', name: '靈魂吸收', desc: '+10% 靈魂獲取', icon: '👻', baseCost: 50, costGrowth: 40, effect: () => { soulMultiplier *= 1.1; } }
+    ],
+    unlocks: [
+        { id: 'startWalls', name: '起始木牆', desc: '開局自帶 3 面木牆', icon: '🪵', cost: 100, effect: () => { metaSystem.upgrades.startWalls = true; } },
+        { id: 'startTurret', name: '起始弩砲塔', desc: '開局自帶 1 座弩砲塔', icon: '🏹', cost: 200, effect: () => { metaSystem.upgrades.startTurret = true; } },
+        { id: 'extraCardSlot', name: '魔法精通', desc: '升級時額外顯示 1 張魔法卡', icon: '✨', cost: 300, effect: () => { metaSystem.upgrades.extraCardSlot = true; upgradeCardCount = 4; } },
+        { id: 'extraMinionMax', name: '召喚精通', desc: '小兵上限永久 +1', icon: '👥', cost: 250, effect: () => { metaSystem.upgrades.extraMinionMax = true; } },
+        { id: 'luckyBlessing', name: '幸運祝福', desc: '稀有卡機率 +10%', icon: '🍀', cost: 400, effect: () => { metaSystem.upgrades.luckyBlessing = true; } },
+        { id: 'endlessMode', name: '無盡挑戰', desc: '解鎖 20 波後無盡模式', icon: '♾️', cost: 500, effect: () => { metaSystem.upgrades.endlessMode = true; } }
+    ]
+};
+
+let startingGold = 30;      // 開局金幣（受永久升級影響）
+let soulMultiplier = 1.0;   // 靈魂獲取倍數（受永久升級影響）
+let upgradeCardCount = 3;   // 升級卡數量（預設 3 個）
+let currentRunSouls = 0;    // 本局獲得的靈魂
 
 // 傷害統計系統
 const damageStats = {};
@@ -783,7 +921,6 @@ function startGame() {
         document.getElementById('tutorial-overlay').classList.remove('hidden');
     }
 }
-
 function closeTutorial() {
     SoundManager.play('ui_click');
     const skipCheck = document.getElementById('skip-tutorial-check');
@@ -795,6 +932,70 @@ function closeTutorial() {
 }
 
 function beginActualGame() {
+    // 重置遊戲狀態
+    playerLevel = 1;
+    currentExp = 0;
+    maxExp = 15;
+    gold = startingGold;  // 使用永久升級調整後的開局金幣
+    totalKills = 0;
+    totalPlayTime = 0;
+    currentWave = 1;
+    damageStats = {};
+    currentRunSouls = 0;
+    
+    // 重置玩家、核心、敵人等狀態
+    playerStats.damageMultiplier = 1.0;
+    playerStats.attackSpeedMultiplier = 1.0;
+    playerStats.moveSpeedMultiplier = 1.0;
+    playerStats.projectileCount = 1;
+    playerStats.pierceLimit = 0;
+    playerStats.goldDamageScaling = 0;
+    playerStats.fireLevel = 0;
+    playerStats.iceLevel = 0;
+    playerStats.lightningLevel = 0;
+    playerStats.thorns = 0;
+    playerStats.corpseExplosion = false;
+    playerStats.wallExplosion = false;
+    playerStats.auraHeal = false;
+    playerStats.minionFrenzy = false;
+    playerStats.necromancy = false;
+    playerStats.buildingHpMultiplier = 1.0;
+    playerStats.extraMinionCapacity = 0;
+    playerStats.bonusGoldDrop = 0;
+    playerStats.lifeSteal = 0;
+    playerStats.spreadShot = false;
+    playerStats.explosiveRounds = false;
+    playerStats.homingMissiles = false;
+    playerStats.orbitalLevel = 0;
+    playerStats.toxicTrail = false;
+    
+    player.hp = player.maxHp;
+    core.hp = core.maxHp;
+    
+    // 應用永久升級
+    applyMetaUpgrades();
+    
+    // 應用一次性解鎖效果
+    if (metaSystem.upgrades.startWalls) {
+        for (let i = 0; i < 3; i++) buildQueue.push('woodWall');
+    }
+    if (metaSystem.upgrades.startTurret) {
+        buildQueue.push('turret');
+    }
+    
+    // 清空遊戲實體
+    projectiles = [];
+    expGems = [];
+    goldCoins = [];
+    magnets = [];
+    buildings = [];
+    friendlyMinions = [];
+    friendlyWorkers = [];
+    enemies = [];
+    floatingTexts = [];
+    trailPools = [];
+    
+    updateUI();
     document.getElementById('ui-layer').classList.remove('hidden');
     currentState = GAME_STATE.PLAYING;
     lastTime = performance.now();
@@ -816,10 +1017,210 @@ function togglePause() {
     }
 }
 
+// ======================== META 系統 函數 ========================
+function saveMetaProgress() {
+    const data = {
+        souls: metaSystem.souls,
+        upgrades: metaSystem.upgrades,
+        stats: metaSystem.stats
+    };
+    localStorage.setItem('tdgameMeta', JSON.stringify(data));
+}
+
+function loadMetaProgress() {
+    const saved = localStorage.getItem('tdgameMeta');
+    if (saved) {
+        const data = JSON.parse(saved);
+        metaSystem.souls = data.souls || 0;
+        metaSystem.upgrades = { ...metaSystem.upgrades, ...data.upgrades };
+        metaSystem.stats = { ...metaSystem.stats, ...data.stats };
+    }
+    applyMetaUpgrades();
+}
+
+function applyMetaUpgrades() {
+    // 重置為初始值
+    startingGold = 30;
+    soulMultiplier = 1.0;
+    upgradeCardCount = metaSystem.upgrades.extraCardSlot ? 4 : 3;
+    
+    // 應用可疊加升級
+    playerStats.damageMultiplier *= Math.pow(1.05, metaSystem.upgrades.powerStacking);
+    playerStats.moveSpeedMultiplier *= Math.pow(1.05, metaSystem.upgrades.speedStacking);
+    player.maxHp += metaSystem.upgrades.healthStacking * 10;
+    player.hp = player.maxHp;
+    core.maxHp += metaSystem.upgrades.coreHealthStacking * 50;
+    core.hp = core.maxHp;
+    startingGold += metaSystem.upgrades.goldStacking * 5;
+    soulMultiplier *= Math.pow(1.1, metaSystem.upgrades.soulStacking);
+    
+    // 應用一次性解鎖效果（只在遊戲內應用一次）
+    if (metaSystem.upgrades.extraMinionMax) {
+        playerStats.extraMinionCapacity += 1;
+    }
+}
+
+function updateStartScreenUI() {
+    document.getElementById('start-soul-count').innerText = metaSystem.souls;
+}
+
+function calculateSoulReward(wavesReached, kills, isBossDefeated) {
+    let souls = (wavesReached * 5) + Math.floor(kills / 10);
+    if (isBossDefeated) souls += 100;
+    souls = Math.ceil(souls * soulMultiplier);
+    return souls;
+}
+
+function openSoulShop() {
+    SoundManager.play('ui_click');
+    
+    // 填充可疊加升級
+    const stackableContainer = document.getElementById('stackable-upgrades');
+    stackableContainer.innerHTML = '';
+    metaUpgrades.stackable.forEach(upg => {
+        const level = metaSystem.upgrades[upg.id];
+        const cost = upg.baseCost + (upg.costGrowth * level);
+        const bought = metaSystem.souls >= cost;
+        
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-lg border-2 transition-all cursor-pointer ${
+            bought 
+                ? 'bg-purple-900/40 border-purple-500 hover:bg-purple-900/60 hover:border-purple-400' 
+                : 'bg-gray-800/40 border-gray-600 opacity-60'
+        }`;
+        card.innerHTML = `
+            <div class="text-2xl mb-1">${upg.icon}</div>
+            <div class="text-sm font-bold text-purple-300">${upg.name}</div>
+            <div class="text-xs text-gray-400 mb-2">${upg.desc}</div>
+            <div class="flex justify-between items-center">
+                <span class="text-xs">Lv. ${level}</span>
+                <span class="text-purple-400 font-bold">${cost} 👻</span>
+            </div>
+        `;
+        
+        if (bought) {
+            card.onclick = () => buyStackableUpgrade(upg.id);
+        }
+        
+        stackableContainer.appendChild(card);
+    });
+    
+    // 填充一次性解鎖
+    const unlockContainer = document.getElementById('unlock-upgrades');
+    unlockContainer.innerHTML = '';
+    metaUpgrades.unlocks.forEach(upg => {
+        const purchased = metaSystem.upgrades[upg.id];
+        const canBuy = metaSystem.souls >= upg.cost && !purchased;
+        
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-lg border-2 transition-all cursor-pointer ${
+            purchased
+                ? 'bg-green-900/30 border-green-600 opacity-60'
+                : canBuy
+                ? 'bg-cyan-900/40 border-cyan-500 hover:bg-cyan-900/60 hover:border-cyan-400'
+                : 'bg-gray-800/40 border-gray-600 opacity-60'
+        }`;
+        card.innerHTML = `
+            <div class="text-2xl mb-1">${upg.icon}</div>
+            <div class="text-sm font-bold ${purchased ? 'text-green-400' : 'text-cyan-300'}">${upg.name}</div>
+            <div class="text-xs text-gray-400 mb-2">${upg.desc}</div>
+            <div class="text-cyan-400 font-bold">${purchased ? '✓ 已解鎖' : `${upg.cost} 👻`}</div>
+        `;
+        
+        if (canBuy) {
+            card.onclick = () => buyUnlockUpgrade(upg.id);
+        }
+        
+        unlockContainer.appendChild(card);
+    });
+    
+    // 更新統計
+    document.getElementById('shop-soul-count').innerText = metaSystem.souls;
+    document.getElementById('stat-total-runs').innerText = metaSystem.stats.totalRuns;
+    document.getElementById('stat-best-wave').innerText = metaSystem.stats.bestWave;
+    document.getElementById('stat-total-kills').innerText = metaSystem.stats.totalKillsAllTime;
+    
+    document.getElementById('soul-shop-overlay').classList.remove('hidden');
+}
+
+function closeSoulShop() {
+    SoundManager.play('ui_click');
+    document.getElementById('soul-shop-overlay').classList.add('hidden');
+    updateStartScreenUI();
+}
+
+function buyStackableUpgrade(upgradeId) {
+    const upg = metaUpgrades.stackable.find(u => u.id === upgradeId);
+    if (!upg) return;
+    
+    const level = metaSystem.upgrades[upgradeId];
+    const cost = upg.baseCost + (upg.costGrowth * level);
+    
+    if (metaSystem.souls >= cost) {
+        SoundManager.play('coin');
+        metaSystem.souls -= cost;
+        metaSystem.upgrades[upgradeId]++;
+        saveMetaProgress();
+        openSoulShop(); // 刷新 UI
+    } else {
+        SoundManager.play('error');
+    }
+}
+
+function buyUnlockUpgrade(upgradeId) {
+    const upg = metaUpgrades.unlocks.find(u => u.id === upgradeId);
+    if (!upg) return;
+    
+    if (metaSystem.upgrades[upgradeId]) return; // 已購買
+    if (metaSystem.souls < upg.cost) {
+        SoundManager.play('error');
+        return;
+    }
+    
+    SoundManager.play('levelup');
+    metaSystem.souls -= upg.cost;
+    metaSystem.upgrades[upgradeId] = true;
+    upg.effect?.();
+    saveMetaProgress();
+    openSoulShop(); // 刷新 UI
+}
+
+function resetMetaProgress() {
+    if (!confirm('確定要重置所有進度？此操作無法撤銷！')) return;
+    
+    metaSystem.souls = 0;
+    metaSystem.upgrades = {
+        powerStacking: 0,
+        speedStacking: 0,
+        healthStacking: 0,
+        coreHealthStacking: 0,
+        goldStacking: 0,
+        soulStacking: 0,
+        startWalls: false,
+        startTurret: false,
+        extraCardSlot: false,
+        extraMinionMax: false,
+        luckyBlessing: false,
+        endlessMode: false,
+    };
+    metaSystem.stats = { totalRuns: 0, bestWave: 0, totalKillsAllTime: 0 };
+    
+    localStorage.removeItem('tdgameMeta');
+    SoundManager.play('ui_click');
+    openSoulShop();
+}
+
 function restartGame() {
     SoundManager.init();
     SoundManager.play('ui_click');
     setTimeout(() => location.reload(), 150);
+}
+
+function initMetaSystem() {
+    // 從 localStorage 加載 meta 進度
+    loadMetaProgress();
+    // 更新開始畫面 UI
+    updateStartScreenUI();
 }
 
 // --- 視覺特效 (VFX) ---
@@ -3595,6 +3996,27 @@ function evolveBuilding(targetBuildType) {
 function gameOver(title, desc, isVictory = false) {
     currentState = isVictory ? GAME_STATE.VICTORY : GAME_STATE.GAMEOVER;
     
+    // 計算靈魂獎勵
+    currentRunSouls = calculateSoulReward(currentWave - 1, totalKills, isVictory);
+    metaSystem.souls += currentRunSouls;
+    metaSystem.stats.totalRuns++;
+    metaSystem.stats.bestWave = Math.max(metaSystem.stats.bestWave, currentWave - 1);
+    metaSystem.stats.totalKillsAllTime += totalKills;
+    saveMetaProgress();
+    
+    // 顯示靈魂獎勵
+    const soulRewardDiv = document.getElementById('soul-reward-container');
+    soulRewardDiv.classList.remove('hidden');
+    document.getElementById('soul-reward-amount').innerText = `+${currentRunSouls}`;
+    
+    const breakdown = `
+        (${currentWave - 1} 波 × 5 = ${(currentWave - 1) * 5}) + 
+        (${totalKills} 擊殺 ÷ 10 = ${Math.floor(totalKills / 10)})${
+            isVictory ? ` + (Boss × 100 = 100)` : ''
+        }${soulMultiplier > 1 ? ` × ${soulMultiplier.toFixed(2)} 倍` : ''}
+    `;
+    document.getElementById('soul-breakdown').innerText = breakdown;
+    
     document.getElementById('overlay-title').innerText = title;
     document.getElementById('overlay-title').className = isVictory ? "text-5xl font-black mb-2 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" : "text-5xl font-black mb-2 text-red-500 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]";
     document.getElementById('overlay-desc').innerHTML = `${desc}<br><span class="text-blue-300 font-bold mt-2 inline-block">最終等級: ${playerLevel} | 存活波次: ${currentWave}/${totalWaves}</span>`;
@@ -4256,6 +4678,7 @@ function draw() {
 }
 
 // 初始化遊戲 - 繪製開始畫面
+initMetaSystem();
 camera.update(player.x, player.y);
 draw();
 startGameLoop();
