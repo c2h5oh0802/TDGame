@@ -1010,6 +1010,12 @@ function beginActualGame() {
     if (metaSystem.upgrades.startTurret) {
         buildQueue.push('turret');
     }
+
+    // 有起始建築時，開局直接進入建造模式
+    if (buildQueue.length > 0) {
+        currentBuildType = buildQueue[0];
+        currentState = GAME_STATE.BUILDING;
+    }
     
     // 清空遊戲實體
     projectiles = [];
@@ -1030,7 +1036,9 @@ function beginActualGame() {
         draw();
     }
     document.getElementById('ui-layer').classList.remove('hidden');
-    currentState = GAME_STATE.PLAYING;
+    if (buildQueue.length === 0) {
+        currentState = GAME_STATE.PLAYING;
+    }
     lastTime = performance.now();
     startGameLoop();
 }
@@ -1069,35 +1077,6 @@ function loadMetaProgress() {
         metaSystem.stats = { ...metaSystem.stats, ...data.stats };
     }
     applyMetaUpgrades();
-    // Convenience for testing: grant extra souls via URL parameter ?grantSouls=500
-    try {
-        const params = new URLSearchParams(location.search);
-        const amt = parseInt(params.get('grantSouls') || '', 10);
-        if (!isNaN(amt) && amt > 0) {
-            metaSystem.souls += amt;
-            saveMetaProgress();
-            console.log('[TEST] Grant souls', amt, 'new total:', metaSystem.souls);
-        }
-        // Local one-time test grant (no push): 500 souls
-        if (!sessionStorage.getItem('metagrant500_done')) {
-            const testAmt = 500;
-            metaSystem.souls += testAmt;
-            saveMetaProgress();
-            sessionStorage.setItem('metagrant500_done', '1');
-            console.log('[TEST] Local testing: granted', testAmt, 'souls');
-        }
-        // Debug: show state after potential testing grants
-        try {
-            console.log('[DEBUG] loadMetaProgress final state', {
-                souls: metaSystem.souls,
-                upgrades: metaSystem.upgrades,
-                stats: metaSystem.stats
-            });
-        } catch (e) { /* ignore */ }
-        }
-    } catch (e) {
-        // ignore
-    }
 }
 
 function applyMetaUpgrades() {
@@ -3505,6 +3484,14 @@ function getRandomRarityObj() {
     let wRare = Math.min(45, 20 + currentWave * 1.5);   
     let wEpic = Math.min(30, 5 + currentWave * 1.0);  
     let wLeg = Math.min(15, 0 + currentWave * 0.5);   
+
+    // 永久解鎖「幸運祝福」：提高稀有以上出現率
+    if (metaSystem?.upgrades?.luckyBlessing) {
+        wRare += 6;
+        wEpic += 3;
+        wLeg += 1;
+        wCommon = Math.max(5, wCommon - 10);
+    }
     
     let weights = [ { obj: rarities[0], w: wCommon }, { obj: rarities[1], w: wRare }, { obj: rarities[2], w: wEpic }, { obj: rarities[3], w: wLeg } ];
     let total = wCommon + wRare + wEpic + wLeg;
@@ -3622,7 +3609,7 @@ function generateUpgradeChoices() {
     container.innerHTML = ''; 
     const categories = ['buildings', 'spells', 'enhancements'];
 
-    categories.forEach(category => {
+    const appendUpgradeCard = (category) => {
         let rObj = getRandomRarityObj();
         let validItems = upgradePool[category].filter(i => i.rarity === rObj.id && (!i.condition || i.condition()));
         
@@ -3666,7 +3653,22 @@ function generateUpgradeChoices() {
             document.getElementById('confirm-upgrade-btn').classList.remove('hidden');
         };
         container.appendChild(card);
+
+        return true;
+    };
+
+    // 基礎 3 張：建築 / 法術 / 強化
+    categories.forEach(category => {
+        appendUpgradeCard(category);
     });
+
+    // 永久解鎖「魔法精通」後，額外多 1 張（或更多）
+    const extraCards = Math.max(0, upgradeCardCount - categories.length);
+    for (let i = 0; i < extraCards; i++) {
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        appendUpgradeCard(randomCategory);
+    }
+
     document.getElementById('levelup-overlay').classList.remove('hidden');
 }
 
