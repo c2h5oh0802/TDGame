@@ -1086,6 +1086,15 @@ function loadMetaProgress() {
             sessionStorage.setItem('metagrant500_done', '1');
             console.log('[TEST] Local testing: granted', testAmt, 'souls');
         }
+        // Debug: show state after potential testing grants
+        try {
+            console.log('[DEBUG] loadMetaProgress final state', {
+                souls: metaSystem.souls,
+                upgrades: metaSystem.upgrades,
+                stats: metaSystem.stats
+            });
+        } catch (e) { /* ignore */ }
+        }
     } catch (e) {
         // ignore
     }
