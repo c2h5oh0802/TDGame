@@ -242,6 +242,15 @@
                 👻 靈魂商店
             </button>
         </div>
+
+        <div class="mt-5 bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3 w-full max-w-xl">
+            <div class="text-sm text-gray-300 mb-2 text-center">關卡選擇（通關第一關解鎖第二關）</div>
+            <div class="flex items-center justify-center gap-3">
+                <button id="stage-btn-1" onclick="selectStage(1)" class="px-4 py-2 rounded-lg border text-sm font-bold border-emerald-500 bg-emerald-700/40 text-emerald-200">第一關</button>
+                <button id="stage-btn-2" onclick="selectStage(2)" class="px-4 py-2 rounded-lg border text-sm font-bold border-gray-600 bg-gray-800/50 text-gray-400">第二關（鎖定）</button>
+            </div>
+            <div id="stage-desc" class="text-xs text-gray-400 mt-2 text-center">第一關：標準難度</div>
+        </div>
     </div>
 
     <!-- 升級畫面 -->
@@ -619,6 +628,28 @@ const metaSystem = {
         totalRuns: 0,          // 總遊玩次數
         bestWave: 0,           // 最高波數
         totalKillsAllTime: 0,  // 歷史總擊殺
+        unlockedStage: 1,      // 已解鎖最高關卡
+    }
+};
+
+let selectedStage = 1;
+
+const stageConfig = {
+    1: {
+        name: '第一關',
+        enemyHpMul: 1.0,
+        enemyDmgMul: 1.0,
+        enemySpeedMul: 1.0,
+        spawnRateMul: 1.0,
+        soulMul: 1.0,
+    },
+    2: {
+        name: '第二關',
+        enemyHpMul: 1.35,
+        enemyDmgMul: 1.25,
+        enemySpeedMul: 1.12,
+        spawnRateMul: 1.18,
+        soulMul: 1.35,
     }
 };
 
@@ -1116,12 +1147,63 @@ function applyMetaUpgrades() {
 
 function updateStartScreenUI() {
     document.getElementById('start-soul-count').innerText = metaSystem.souls;
+    updateStageUI();
+}
+
+function updateStageUI() {
+    const unlocked = Math.max(1, metaSystem.stats.unlockedStage || 1);
+    const btn1 = document.getElementById('stage-btn-1');
+    const btn2 = document.getElementById('stage-btn-2');
+    const desc = document.getElementById('stage-desc');
+    if (!btn1 || !btn2 || !desc) return;
+
+    const setSelected = (btn, on) => {
+        if (on) {
+            btn.classList.remove('border-gray-600', 'bg-gray-800/50', 'text-gray-400');
+            btn.classList.add('border-emerald-500', 'bg-emerald-700/40', 'text-emerald-200');
+        } else {
+            btn.classList.remove('border-emerald-500', 'bg-emerald-700/40', 'text-emerald-200');
+            btn.classList.add('border-gray-600', 'bg-gray-800/50', 'text-gray-400');
+        }
+    };
+
+    setSelected(btn1, selectedStage === 1);
+    setSelected(btn2, selectedStage === 2 && unlocked >= 2);
+
+    if (unlocked >= 2) {
+        btn2.disabled = false;
+        if (selectedStage !== 2) {
+            btn2.innerText = '第二關';
+        }
+    } else {
+        btn2.disabled = true;
+        btn2.innerText = '第二關（鎖定）';
+        if (selectedStage === 2) selectedStage = 1;
+    }
+
+    if (selectedStage === 1) {
+        desc.innerText = '第一關：標準難度';
+    } else {
+        desc.innerText = '第二關：敵人更硬、更痛、更快（靈魂獎勵提升）';
+    }
+}
+
+function selectStage(stage) {
+    const unlocked = Math.max(1, metaSystem.stats.unlockedStage || 1);
+    if (stage > unlocked) {
+        SoundManager.play('error');
+        return;
+    }
+    selectedStage = stage;
+    SoundManager.play('ui_click');
+    updateStageUI();
 }
 
 function calculateSoulReward(wavesReached, kills, isBossDefeated) {
     let souls = (wavesReached * 5) + Math.floor(kills / 10);
     if (isBossDefeated) souls += 100;
-    souls = Math.ceil(souls * soulMultiplier);
+    const stageSoulMul = stageConfig[selectedStage]?.soulMul || 1.0;
+    souls = Math.ceil(souls * soulMultiplier * stageSoulMul);
     return souls;
 }
 
@@ -1257,7 +1339,7 @@ function resetMetaProgress() {
         luckyBlessing: false,
         endlessMode: false,
     };
-    metaSystem.stats = { totalRuns: 0, bestWave: 0, totalKillsAllTime: 0 };
+    metaSystem.stats = { totalRuns: 0, bestWave: 0, totalKillsAllTime: 0, unlockedStage: 1 };
     
     localStorage.removeItem('tdgameMeta');
     SoundManager.play('ui_click');
@@ -1273,6 +1355,9 @@ function restartGame() {
 function initMetaSystem() {
     // 從 localStorage 加載 meta 進度
     loadMetaProgress();
+    if (!metaSystem.stats.unlockedStage || metaSystem.stats.unlockedStage < 1) {
+        metaSystem.stats.unlockedStage = 1;
+    }
     // 更新開始畫面 UI
     updateStartScreenUI();
 }
@@ -2721,6 +2806,11 @@ class Enemy extends Entity {
         }
         
         this.hp = this.maxHp;
+        const stage = stageConfig[selectedStage] || stageConfig[1];
+        this.maxHp *= stage.enemyHpMul;
+        this.hp = this.maxHp;
+        this.damage *= stage.enemyDmgMul;
+        this.speed *= stage.enemySpeedMul;
         this.attackCooldown = (type === 'ranged' ? 2.0 : (type === 'warlock' ? 3.5 : 1.0)); 
         this.currentCooldown = 0; 
         
@@ -4073,6 +4163,10 @@ function evolveBuilding(targetBuildType) {
 
 function gameOver(title, desc, isVictory = false) {
     currentState = isVictory ? GAME_STATE.VICTORY : GAME_STATE.GAMEOVER;
+
+    if (isVictory && selectedStage === 1 && (metaSystem.stats.unlockedStage || 1) < 2) {
+        metaSystem.stats.unlockedStage = 2;
+    }
     
     // 計算靈魂獎勵
     currentRunSouls = calculateSoulReward(currentWave - 1, totalKills, isVictory);
@@ -4272,7 +4366,8 @@ function gameLoop(timestamp) {
                 } else {
                     baseSpawnInterval = Math.max(0.45, 0.55 - ((currentWave - 15) * 0.02));
                 }
-                enemySpawnTimer = baseSpawnInterval;
+                const stage = stageConfig[selectedStage] || stageConfig[1];
+                enemySpawnTimer = baseSpawnInterval / stage.spawnRateMul;
             }
             if (waveTimer <= 0) { isWaveSpawning = false; breakTimer = maxBreakTimer; }
         } else {
