@@ -653,6 +653,25 @@ const stageConfig = {
     }
 };
 
+const stageBossConfig = {
+    1: {
+        name: '傳說勇者',
+        warning: '⚠️ 警告：傳說勇者已抵達戰場！ ⚠️',
+        icon: '👑',
+        projectileColor: '#ffffff',
+        volleyAngles: [0, 0.3, -0.3],
+        skillCooldown: 5.0,
+    },
+    2: {
+        name: '深淵征服者・奧雷克',
+        warning: '☠️ 警告：深淵征服者・奧雷克降臨！ ☠️',
+        icon: '☠️',
+        projectileColor: '#c084fc',
+        volleyAngles: [0, 0.22, -0.22, 0.45, -0.45],
+        skillCooldown: 3.5,
+    }
+};
+
 // 升級定義
 const metaUpgrades = {
     stackable: [
@@ -2745,6 +2764,7 @@ class Enemy extends Entity {
         
         this.type = type;
         this.angle = 0; 
+        this.bossProfile = stageBossConfig[selectedStage] || stageBossConfig[1];
         
          // PR4: 心流理論難度曲線 - 分段式成長避免早期過難
          // 波次 1-5: 學習期 (緩慢成長, 乘數 0.3-1.5)
@@ -2988,12 +3008,13 @@ class Enemy extends Entity {
 
         if (this.type === 'boss') {
             this.stateTimer += dt;
-            if (this.stateTimer > 5) {
+            if (this.stateTimer > this.bossProfile.skillCooldown) {
                 this.stateTimer = 0;
                 let angle = Math.atan2(targetObj.y - this.y, targetObj.x - this.x);
-                projectiles.push(new Projectile(this.x, this.y, angle, this.damage, '#fff', true, 12, 400));
-                projectiles.push(new Projectile(this.x, this.y, angle+0.3, this.damage, '#fff', true, 12, 400));
-                projectiles.push(new Projectile(this.x, this.y, angle-0.3, this.damage, '#fff', true, 12, 400));
+                this.bossProfile.volleyAngles.forEach(offset => {
+                    projectiles.push(new Projectile(this.x, this.y, angle + offset, this.damage, this.bossProfile.projectileColor, true, 12, 420));
+                });
+                spawnParticles(this.x, this.y, this.bossProfile.projectileColor, 16, 6, 140);
             }
         }
 
@@ -3075,7 +3096,10 @@ class Enemy extends Entity {
                 }
             }
 
-            if (this.type === 'boss') gameOver("史詩般的勝利！", "你成功擊敗了傳說勇者，守住了魔王城！", true);
+            if (this.type === 'boss') {
+                const bossName = this.bossProfile?.name || '傳說勇者';
+                gameOver('史詩般的勝利！', `你成功擊敗了${bossName}，守住了魔王城！`, true);
+            }
         }
         return actualDamage; 
     }
@@ -3107,7 +3131,10 @@ class Enemy extends Entity {
 
         if (this.type === 'boss') {
             ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.textAlign='center';
-            ctx.fillText('👑', this.x, this.y - this.radius - 15);
+            ctx.fillText(this.bossProfile.icon, this.x, this.y - this.radius - 15);
+            ctx.fillStyle = this.bossProfile.projectileColor;
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText(this.bossProfile.name, this.x, this.y - this.radius - 32);
         } else if (this.type === 'warlock') {
             ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.textAlign='center';
             ctx.fillText('🔮', this.x, this.y - this.radius - 10);
@@ -3256,6 +3283,12 @@ function spawnBoss() {
     const x = player.x + Math.cos(angle) * spawnRadius;
     const y = player.y + Math.sin(angle) * spawnRadius;
     enemies.push(new Enemy(x, y, 'boss'));
+    const bossProfile = stageBossConfig[selectedStage] || stageBossConfig[1];
+    const warningEl = document.getElementById('boss-warning');
+    warningEl.innerText = bossProfile.warning;
+    warningEl.className = selectedStage === 2
+        ? 'mt-4 text-3xl font-black text-purple-300 pulse-text drop-shadow-[0_0_14px_rgba(192,132,252,0.95)]'
+        : 'mt-4 text-3xl font-bold text-red-500 pulse-text drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]';
     document.getElementById('boss-warning').classList.remove('hidden');
 }
 
