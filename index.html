@@ -58,6 +58,19 @@
             <div id="boss-warning" class="mt-4 text-3xl font-bold text-red-500 pulse-text hidden drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">
                 ⚠️ 警告：傳說勇者已抵達戰場！ ⚠️
             </div>
+            
+            <!-- 角色技能 UI -->
+            <div id="skill-ui" class="mt-3 flex items-center space-x-3 bg-gray-900/80 px-4 py-2 rounded-full border border-purple-600 hidden">
+                <span id="skill-name" class="text-purple-300 font-bold text-sm">技能</span>
+                <div class="relative w-12 h-12 bg-gray-800 rounded-lg border-2 border-purple-500 overflow-hidden">
+                    <div id="skill-icon" class="w-full h-full flex items-center justify-center text-2xl">🔮</div>
+                    <div id="skill-cooldown-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center text-white font-bold text-sm" style="display: none;">
+                        <span id="skill-cooldown-text">0</span>
+                    </div>
+                    <div id="skill-active-overlay" class="absolute inset-0 bg-purple-500/40 border-2 border-yellow-400" style="display: none;"></div>
+                </div>
+                <kbd class="px-2 py-1 bg-gray-700 rounded text-xs font-mono text-white border border-gray-600">Q</kbd>
+            </div>
         </div>
 
         <div class="space-y-2 pb-8 pointer-events-auto">
@@ -243,7 +256,17 @@
             </button>
         </div>
 
-        <div class="mt-5 bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3 w-full max-w-xl">
+        <!-- 角色選擇 -->
+        <div class="mt-5 bg-gray-900/60 border border-purple-700 rounded-xl px-4 py-3 w-full max-w-2xl">
+            <div class="text-sm text-purple-300 mb-3 text-center font-bold">選擇角色</div>
+            <div id="character-select" class="flex items-stretch justify-center gap-2 sm:gap-3">
+                <!-- 角色卡片由 JS 動態生成 -->
+            </div>
+            <div id="char-desc" class="text-xs text-gray-400 mt-3 text-center h-8"></div>
+        </div>
+
+        <!-- 關卡選擇 -->
+        <div class="mt-3 bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3 w-full max-w-xl">
             <div class="text-sm text-gray-300 mb-2 text-center">關卡選擇（通關第一關解鎖第二關）</div>
             <div class="flex items-center justify-center gap-3">
                 <button id="stage-btn-1" onclick="selectStage(1)" class="px-4 py-2 rounded-lg border text-sm font-bold border-emerald-500 bg-emerald-700/40 text-emerald-200">第一關</button>
@@ -362,6 +385,13 @@
             <div class="mb-6">
                 <h3 class="text-xl font-bold text-cyan-400 mb-3 border-b border-cyan-600 pb-2">🔓 永久解鎖 (一次性)</h3>
                 <div id="unlock-upgrades" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                </div>
+            </div>
+
+            <!-- 角色解鎖 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-pink-400 mb-3 border-b border-pink-600 pb-2">🎭 角色解鎖</h3>
+                <div id="character-unlocks" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 </div>
             </div>
 
@@ -623,14 +653,86 @@ const metaSystem = {
         extraMinionMax: false, // 召喚精通：小兵上限 +1
         luckyBlessing: false,  // 幸運祝福：稀有卡機率 +10%
         endlessMode: false,    // 無盡挑戰：解鎖無盡模式
+        
+        // 角色解鎖
+        charSummoner: false,   // 深淵召喚師
+        charDestroyer: false,  // 毀滅領主
     },
     stats: {
         totalRuns: 0,          // 總遊玩次數
         bestWave: 0,           // 最高波數
         totalKillsAllTime: 0,  // 歷史總擊殺
         unlockedStage: 1,      // 已解鎖最高關卡
+        stage2BossDefeated: false, // 第二關 Boss 擊敗紀錄
     }
 };
+
+// ======================== 角色系統 ========================
+const characterData = {
+    darkLord: {
+        id: 'darkLord',
+        name: '黑暗魔王',
+        icon: '👿',
+        desc: '均衡型角色，適合新手',
+        unlockCondition: null, // 預設解鎖
+        passive: {
+            damageMultiplier: 1.0,
+            minionDamageMultiplier: 1.0,
+            minionCapacityBonus: 0,
+            buildingHpMultiplier: 1.0,
+            attackSpeedMultiplier: 1.0,
+        },
+        skill: null, // 無主動技能
+    },
+    summoner: {
+        id: 'summoner',
+        name: '深淵召喚師',
+        icon: '💀',
+        desc: '小兵傷害+30%、上限+2，但攻擊力-20%',
+        unlockCondition: 'purchase', // 靈魂商店購買
+        unlockCost: 200,
+        passive: {
+            damageMultiplier: 0.8,       // 攻擊力 -20%
+            minionDamageMultiplier: 1.3, // 小兵傷害 +30%
+            minionCapacityBonus: 2,      // 小兵上限 +2
+            buildingHpMultiplier: 1.0,
+            attackSpeedMultiplier: 1.0,
+        },
+        skill: {
+            name: '召喚狂潮',
+            icon: '💀',
+            desc: '立即召喚 5 隻隨機小兵',
+            cooldown: 45,
+            action: 'summonWave',
+        },
+    },
+    destroyer: {
+        id: 'destroyer',
+        name: '毀滅領主',
+        icon: '🔥',
+        desc: '攻擊力+40%、射速+20%，但建築HP-30%',
+        unlockCondition: 'stage2Boss', // 擊敗第二關 Boss
+        passive: {
+            damageMultiplier: 1.4,       // 攻擊力 +40%
+            minionDamageMultiplier: 1.0,
+            minionCapacityBonus: 0,
+            buildingHpMultiplier: 0.7,   // 建築 HP -30%
+            attackSpeedMultiplier: 1.2,  // 射速 +20%
+        },
+        skill: {
+            name: '毀滅光束',
+            icon: '🔥',
+            desc: '發射穿透一切的強力光束 3 秒',
+            cooldown: 30,
+            action: 'destructionBeam',
+        },
+    },
+};
+
+let selectedCharacter = 'darkLord';
+let characterSkillCooldown = 0;  // 當前技能冷卻時間
+let characterSkillActive = false; // 技能是否正在生效
+let characterSkillTimer = 0;      // 技能持續時間計時器
 
 let selectedStage = 1;
 
@@ -848,6 +950,11 @@ window.addEventListener('keydown', e => {
         waveTimer = maxWaveTimer;
     }
     
+    // Q 鍵：使用角色技能
+    if (e.code === 'KeyQ' && currentState === GAME_STATE.PLAYING) {
+        useCharacterSkill();
+    }
+    
     if (e.code === 'KeyZ' && currentState === GAME_STATE.PLAYING) {
         if (minionMode === 'attack') minionMode = 'defend';
         else if (minionMode === 'defend') minionMode = 'follow';
@@ -957,7 +1064,8 @@ const playerStats = {
     explosiveRounds: false,
     homingMissiles: false,
     orbitalLevel: 0,
-    toxicTrail: false
+    toxicTrail: false,
+    minionDamageMultiplier: 1.0  // 角色被動：小兵傷害加成
 };
 
 let buildQueue = [];
@@ -1056,6 +1164,7 @@ function beginActualGame() {
     playerStats.homingMissiles = false;
     playerStats.orbitalLevel = 0;
     playerStats.toxicTrail = false;
+    playerStats.minionDamageMultiplier = 1.0;  // 角色被動重置
     
     // 應用永久升級（先應用升級，再設定 HP）
     applyMetaUpgrades();
@@ -1162,11 +1271,147 @@ function applyMetaUpgrades() {
     if (metaSystem.upgrades.extraMinionMax) {
         playerStats.extraMinionCapacity += 1;
     }
+    
+    // ======================== 應用角色被動加成 ========================
+    applyCharacterPassives();
+}
+
+function applyCharacterPassives() {
+    const char = characterData[selectedCharacter];
+    if (!char || !char.passive) return;
+    
+    const passive = char.passive;
+    
+    // 攻擊力加成（乘算）
+    playerStats.damageMultiplier *= passive.damageMultiplier;
+    
+    // 射速加成（乘算）
+    playerStats.attackSpeedMultiplier *= passive.attackSpeedMultiplier;
+    
+    // 建築 HP 加成
+    playerStats.buildingHpMultiplier *= passive.buildingHpMultiplier;
+    
+    // 小兵上限加成
+    playerStats.extraMinionCapacity += passive.minionCapacityBonus;
+    
+    // 小兵傷害加成（需要新增到 playerStats）
+    if (!playerStats.minionDamageMultiplier) playerStats.minionDamageMultiplier = 1.0;
+    playerStats.minionDamageMultiplier *= passive.minionDamageMultiplier;
+    
+    // 重置技能狀態
+    characterSkillCooldown = 0;
+    characterSkillActive = false;
+    characterSkillTimer = 0;
 }
 
 function updateStartScreenUI() {
     document.getElementById('start-soul-count').innerText = metaSystem.souls;
     updateStageUI();
+    updateCharacterSelectUI();
+}
+
+// ======================== 角色選擇 UI ========================
+function updateCharacterSelectUI() {
+    const container = document.getElementById('character-select');
+    const descEl = document.getElementById('char-desc');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    Object.values(characterData).forEach(char => {
+        const isUnlocked = isCharacterUnlocked(char.id);
+        const isSelected = selectedCharacter === char.id;
+        
+        const card = document.createElement('div');
+        card.className = `flex flex-col items-center p-2 sm:p-3 rounded-lg border-2 transition-all cursor-pointer min-w-[80px] sm:min-w-[100px] ${
+            isSelected 
+                ? 'border-purple-400 bg-purple-900/60 shadow-[0_0_15px_rgba(168,85,247,0.5)]' 
+                : isUnlocked
+                    ? 'border-gray-600 bg-gray-800/40 hover:border-purple-500 hover:bg-gray-800/60'
+                    : 'border-gray-700 bg-gray-900/40 opacity-50'
+        }`;
+        
+        // 鎖定圖示或角色圖示
+        const iconDisplay = isUnlocked ? char.icon : '🔒';
+        const nameDisplay = isUnlocked ? char.name : '???';
+        
+        card.innerHTML = `
+            <div class="text-2xl sm:text-3xl mb-1">${iconDisplay}</div>
+            <div class="text-xs sm:text-sm font-bold ${isSelected ? 'text-purple-300' : 'text-gray-300'}">${nameDisplay}</div>
+            ${isSelected ? '<div class="text-[10px] text-purple-400 mt-1">已選擇</div>' : ''}
+            ${!isUnlocked ? `<div class="text-[10px] text-gray-500 mt-1">${getUnlockHint(char)}</div>` : ''}
+        `;
+        
+        if (isUnlocked) {
+            card.onclick = () => selectCharacter(char.id);
+            card.onmouseenter = () => {
+                descEl.innerHTML = `<span class="text-purple-300">${char.name}</span>: ${char.desc}`;
+            };
+            card.onmouseleave = () => {
+                const selected = characterData[selectedCharacter];
+                descEl.innerHTML = `<span class="text-purple-300">${selected.name}</span>: ${selected.desc}`;
+            };
+        } else {
+            card.onclick = () => {
+                SoundManager.play('error');
+            };
+            card.onmouseenter = () => {
+                descEl.innerHTML = `<span class="text-red-400">未解鎖</span>: ${getUnlockDescription(char)}`;
+            };
+            card.onmouseleave = () => {
+                const selected = characterData[selectedCharacter];
+                descEl.innerHTML = `<span class="text-purple-300">${selected.name}</span>: ${selected.desc}`;
+            };
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // 更新描述為當前選擇的角色
+    const selected = characterData[selectedCharacter];
+    descEl.innerHTML = `<span class="text-purple-300">${selected.name}</span>: ${selected.desc}`;
+}
+
+function isCharacterUnlocked(charId) {
+    const char = characterData[charId];
+    if (!char) return false;
+    
+    // 預設角色永遠解鎖
+    if (char.unlockCondition === null) return true;
+    
+    // 靈魂商店購買
+    if (char.unlockCondition === 'purchase') {
+        return metaSystem.upgrades.charSummoner === true;
+    }
+    
+    // 擊敗第二關 Boss
+    if (char.unlockCondition === 'stage2Boss') {
+        return metaSystem.upgrades.charDestroyer === true;
+    }
+    
+    return false;
+}
+
+function getUnlockHint(char) {
+    if (char.unlockCondition === 'purchase') return `${char.unlockCost} 👻`;
+    if (char.unlockCondition === 'stage2Boss') return '擊敗 Boss';
+    return '';
+}
+
+function getUnlockDescription(char) {
+    if (char.unlockCondition === 'purchase') return `在靈魂商店花費 ${char.unlockCost} 靈魂解鎖`;
+    if (char.unlockCondition === 'stage2Boss') return '擊敗第二關 Boss 解鎖';
+    return '未知解鎖條件';
+}
+
+function selectCharacter(charId) {
+    if (!isCharacterUnlocked(charId)) {
+        SoundManager.play('error');
+        return;
+    }
+    selectedCharacter = charId;
+    SoundManager.play('ui_click');
+    updateCharacterSelectUI();
 }
 
 function updateStageUI() {
@@ -1289,6 +1534,81 @@ function openSoulShop() {
         unlockContainer.appendChild(card);
     });
     
+    // 填充角色解鎖
+    const characterContainer = document.getElementById('character-unlocks');
+    characterContainer.innerHTML = '';
+    Object.values(characterData).forEach(char => {
+        const isUnlocked = isCharacterUnlocked(char.id);
+        const canBuy = char.unlockCondition === 'purchase' && !isUnlocked && metaSystem.souls >= char.unlockCost;
+        const isSelected = selectedCharacter === char.id;
+        
+        // 解鎖條件文字
+        let unlockText = '';
+        if (isUnlocked) {
+            unlockText = '✓ 已解鎖';
+        } else if (char.unlockCondition === 'purchase') {
+            unlockText = `${char.unlockCost} 👻`;
+        } else if (char.unlockCondition === 'stage2Boss') {
+            unlockText = '擊敗第二關 Boss';
+        } else {
+            unlockText = '預設角色';
+        }
+        
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-lg border-2 transition-all ${
+            isSelected
+                ? 'bg-purple-900/60 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                : isUnlocked
+                ? 'bg-pink-900/30 border-pink-500 hover:bg-pink-900/50 cursor-pointer'
+                : canBuy
+                ? 'bg-pink-900/40 border-pink-500 hover:bg-pink-900/60 hover:border-pink-400 cursor-pointer'
+                : 'bg-gray-800/40 border-gray-600 opacity-60'
+        }`;
+        
+        // 被動效果描述
+        let passiveDesc = '';
+        const p = char.passive;
+        if (p.damageMultiplier !== 1.0) passiveDesc += p.damageMultiplier > 1 ? `攻擊+${Math.round((p.damageMultiplier-1)*100)}% ` : `攻擊${Math.round((p.damageMultiplier-1)*100)}% `;
+        if (p.minionDamageMultiplier !== 1.0) passiveDesc += `小兵傷害+${Math.round((p.minionDamageMultiplier-1)*100)}% `;
+        if (p.minionCapacityBonus > 0) passiveDesc += `小兵上限+${p.minionCapacityBonus} `;
+        if (p.buildingHpMultiplier !== 1.0) passiveDesc += `建築HP${Math.round((p.buildingHpMultiplier-1)*100)}% `;
+        if (p.attackSpeedMultiplier !== 1.0) passiveDesc += `射速+${Math.round((p.attackSpeedMultiplier-1)*100)}% `;
+        if (!passiveDesc) passiveDesc = '無特殊加成';
+        
+        card.innerHTML = `
+            <div class="flex items-center mb-2">
+                <span class="text-3xl mr-3">${char.icon}</span>
+                <div>
+                    <div class="font-bold text-white ${isSelected ? 'text-yellow-300' : ''}">${char.name}</div>
+                    <div class="text-xs text-gray-400">${char.desc}</div>
+                </div>
+            </div>
+            <div class="text-xs text-purple-300 mb-2">被動: ${passiveDesc}</div>
+            ${char.skill ? `
+                <div class="text-xs text-cyan-300 mb-2">
+                    技能: ${char.skill.icon} ${char.skill.name} - ${char.skill.desc} (CD: ${char.skill.cooldown}s)
+                </div>
+            ` : '<div class="text-xs text-gray-500 mb-2">無主動技能</div>'}
+            <div class="flex justify-between items-center mt-2">
+                ${isSelected ? '<span class="text-yellow-400 font-bold text-sm">★ 使用中</span>' : ''}
+                <span class="text-pink-400 font-bold ml-auto">${unlockText}</span>
+            </div>
+        `;
+        
+        // 點擊事件
+        if (isUnlocked && !isSelected) {
+            card.onclick = () => {
+                selectCharacter(char.id);
+                SoundManager.play('ui_click');
+                openSoulShop(); // 刷新
+            };
+        } else if (canBuy) {
+            card.onclick = () => buyCharacterUnlock(char.id);
+        }
+        
+        characterContainer.appendChild(card);
+    });
+    
     // 更新統計
     document.getElementById('shop-soul-count').innerText = metaSystem.souls;
     document.getElementById('stat-total-runs').innerText = metaSystem.stats.totalRuns;
@@ -1340,6 +1660,23 @@ function buyUnlockUpgrade(upgradeId) {
     openSoulShop(); // 刷新 UI
 }
 
+function buyCharacterUnlock(charId) {
+    const char = characterData[charId];
+    if (!char || char.unlockCondition !== 'purchase') return;
+    
+    if (isCharacterUnlocked(charId)) return; // 已解鎖
+    if (metaSystem.souls < char.unlockCost) {
+        SoundManager.play('error');
+        return;
+    }
+    
+    SoundManager.play('levelup');
+    metaSystem.souls -= char.unlockCost;
+    metaSystem.upgrades.charSummoner = true; // 標記深淵召喚師已購買
+    saveMetaProgress();
+    openSoulShop(); // 刷新 UI
+}
+
 function resetMetaProgress() {
     if (!confirm('確定要重置所有進度？此操作無法撤銷！')) return;
     
@@ -1357,9 +1694,12 @@ function resetMetaProgress() {
         extraMinionMax: false,
         luckyBlessing: false,
         endlessMode: false,
+        charSummoner: false,
+        charDestroyer: false,
     };
-    metaSystem.stats = { totalRuns: 0, bestWave: 0, totalKillsAllTime: 0, unlockedStage: 1 };
+    metaSystem.stats = { totalRuns: 0, bestWave: 0, totalKillsAllTime: 0, unlockedStage: 1, stage2BossDefeated: false };
     
+    selectedCharacter = 'darkLord';
     localStorage.removeItem('tdgameMeta');
     SoundManager.play('ui_click');
     openSoulShop();
@@ -1379,6 +1719,153 @@ function initMetaSystem() {
     }
     // 更新開始畫面 UI
     updateStartScreenUI();
+}
+
+// ======================== 角色技能系統 ========================
+function useCharacterSkill() {
+    const char = characterData[selectedCharacter];
+    if (!char || !char.skill) {
+        // 無技能角色
+        floatingTexts.push(new FloatingText(player.x, player.y - 30, '無技能', '#888888'));
+        return;
+    }
+    
+    // 檢查冷卻
+    if (characterSkillCooldown > 0) {
+        floatingTexts.push(new FloatingText(player.x, player.y - 30, `冷卻中 ${Math.ceil(characterSkillCooldown)}s`, '#ff6666'));
+        SoundManager.play('error');
+        return;
+    }
+    
+    // 執行技能
+    SoundManager.play('spell');
+    
+    if (char.skill.action === 'summonWave') {
+        executeSkillSummonWave();
+    } else if (char.skill.action === 'destructionBeam') {
+        executeSkillDestructionBeam();
+    }
+    
+    // 設定冷卻
+    characterSkillCooldown = char.skill.cooldown;
+    
+    // 顯示技能名稱
+    floatingTexts.push(new FloatingText(player.x, player.y - 40, char.skill.name, '#ffd700', 1.5));
+}
+
+function executeSkillSummonWave() {
+    // 召喚狂潮：立即召喚 5 隻隨機小兵
+    const minionTypes = ['skeleton', 'demon', 'mage', 'ghost', 'archer'];
+    
+    for (let i = 0; i < 5; i++) {
+        const type = minionTypes[Math.floor(Math.random() * minionTypes.length)];
+        const angle = (Math.PI * 2 / 5) * i;
+        const dist = 60;
+        const x = player.x + Math.cos(angle) * dist;
+        const y = player.y + Math.sin(angle) * dist;
+        
+        const minion = new FriendlyMinion(x, y, type, playerLevel);
+        friendlyMinions.push(minion);
+        
+        // 召喚特效
+        spawnParticles(x, y, '#9333ea', 8, 4, 50);
+    }
+    
+    SoundManager.play('levelup');
+}
+
+function executeSkillDestructionBeam() {
+    // 毀滅光束：啟動 3 秒的強力光束模式
+    characterSkillActive = true;
+    characterSkillTimer = 3.0;
+    
+    // 視覺提示
+    spawnParticles(player.x, player.y, '#ef4444', 20, 5, 80);
+}
+
+function updateCharacterSkill(dt) {
+    // 更新技能冷卻
+    if (characterSkillCooldown > 0) {
+        characterSkillCooldown -= dt;
+        if (characterSkillCooldown < 0) characterSkillCooldown = 0;
+    }
+    
+    // 更新技能持續效果
+    if (characterSkillActive && characterSkillTimer > 0) {
+        characterSkillTimer -= dt;
+        
+        // 毀滅光束效果：持續發射穿透光束
+        if (selectedCharacter === 'destroyer') {
+            // 每幀發射光束粒子
+            const angle = Math.atan2(input.worldMouseY - player.y, input.worldMouseX - player.x);
+            
+            // 發射超強投射物
+            if (Math.random() < 0.3) { // 每幀 30% 機率
+                const beamDamage = 50 * playerStats.damageMultiplier;
+                const proj = new Projectile(
+                    player.x, player.y, 
+                    angle + (Math.random() - 0.5) * 0.1, 
+                    beamDamage, 
+                    '#ff4444', 
+                    false, 
+                    10,  // 大尺寸
+                    1500, // 長射程
+                    999,  // 無限穿透
+                    'player'
+                );
+                proj.isPlayerProj = true;
+                projectiles.push(proj);
+            }
+            
+            // 光束視覺效果
+            spawnParticles(player.x, player.y, '#ff6666', 2, 3, 30);
+        }
+        
+        if (characterSkillTimer <= 0) {
+            characterSkillActive = false;
+            characterSkillTimer = 0;
+        }
+    }
+    
+    // 更新技能 UI
+    updateSkillUI();
+}
+
+function updateSkillUI() {
+    const skillUI = document.getElementById('skill-ui');
+    if (!skillUI) return;
+    
+    const charData = characterData[selectedCharacter];
+    if (!charData || !charData.skill) {
+        skillUI.classList.add('hidden');
+        return;
+    }
+    
+    skillUI.classList.remove('hidden');
+    
+    const skillName = document.getElementById('skill-name');
+    const skillIcon = document.getElementById('skill-icon');
+    const cooldownOverlay = document.getElementById('skill-cooldown-overlay');
+    const cooldownText = document.getElementById('skill-cooldown-text');
+    const activeOverlay = document.getElementById('skill-active-overlay');
+    
+    if (skillName) skillName.textContent = charData.skill.name;
+    if (skillIcon) skillIcon.textContent = charData.skill.icon || '🔮';
+    
+    // 顯示冷卻或啟動狀態
+    if (characterSkillActive) {
+        if (cooldownOverlay) cooldownOverlay.style.display = 'none';
+        if (activeOverlay) activeOverlay.style.display = 'block';
+    } else if (characterSkillCooldown > 0) {
+        if (cooldownOverlay) {
+            cooldownOverlay.style.display = 'flex';
+            if (cooldownText) cooldownText.textContent = Math.ceil(characterSkillCooldown);
+        }
+        if (activeOverlay) activeOverlay.style.display = 'none';
+    } else {
+        if (cooldownOverlay) cooldownOverlay.style.display = 'none';
+        if (activeOverlay) activeOverlay.style.display = 'none';
+    }
 }
 
 // --- 視覺特效 (VFX) ---
@@ -1755,7 +2242,11 @@ class FriendlyMinion extends Entity {
         this.hasAura = false;
     }
     get speed() { return this.hasAura ? this.baseSpeed * 1.5 : this.baseSpeed; }
-    get damage() { return this.hasAura ? this.baseDamage * 1.5 : this.baseDamage; }
+    get damage() { 
+        let dmg = this.hasAura ? this.baseDamage * 1.5 : this.baseDamage;
+        // 套用角色被動：小兵傷害加成
+        return dmg * (playerStats.minionDamageMultiplier || 1.0);
+    }
 
     update(dt) {
         this.updateHitFlash(dt);
@@ -3098,6 +3589,14 @@ class Enemy extends Entity {
 
             if (this.type === 'boss') {
                 const bossName = this.bossProfile?.name || '傳說勇者';
+                
+                // 檢查是否為第二關 Boss，解鎖毀滅領主
+                if (selectedStage === 2 && !metaSystem.upgrades.charDestroyer) {
+                    metaSystem.upgrades.charDestroyer = true;
+                    saveMetaProgress();
+                    floatingTexts.push(new FloatingText(this.x, this.y - 60, '🔓 毀滅領主已解鎖！', '#facc15', true));
+                }
+                
                 gameOver('史詩般的勝利！', `你成功擊敗了${bossName}，守住了魔王城！`, true);
             }
         }
@@ -4362,6 +4861,9 @@ function gameLoop(timestamp) {
     goldCoins.forEach(g => g.update(gameDt));
     magnets.forEach(m => m.update(gameDt)); 
     core.updateHitFlash(gameDt);
+    
+    // 更新角色技能系統
+    updateCharacterSkill(gameDt);
 
     statsUpdateTimer += realDt;
     if (statsUpdateTimer >= 0.5) {
