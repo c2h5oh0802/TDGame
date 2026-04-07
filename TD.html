@@ -2336,6 +2336,7 @@ class PoisonTrap extends Building {
         this.damage = 10; 
         this.tickTimer = 0;
         this.tickInterval = 0.5;
+        this.triggerRadius = gridSize * 1.1;
         this.hpGrowth = 20;
     }
     levelUp() { super.levelUp(); this.damage += 5; }
@@ -2344,7 +2345,7 @@ class PoisonTrap extends Building {
         this.tickTimer += dt;
         if (this.tickTimer >= this.tickInterval) {
             for (let e of enemies) {
-                if (Math.hypot(e.x - this.x, e.y - this.y) < gridSize/2 + e.radius) {
+                if (Math.hypot(e.x - this.x, e.y - this.y) < this.triggerRadius + e.radius) {
                     const dur = 5.0 + (this.poisonDurationBonus || 0);
                     e.poisonTimer = Math.max(e.poisonTimer, dur); 
                     e.poisonDps = this.damage;
@@ -3521,7 +3522,7 @@ const upgradePool = {
         }},
         { rarity: 'legendary', name: '亡靈大軍', desc: '獲得 骷髏墓碑(x4)', icon: '💀', action: () => pushBuildQueue('skeletonSpawner', 4) },
         { rarity: 'rare', name: '狙擊塔 (x1)', desc: '極遠射程、高傷害、帶穿透，但射速極慢。', icon: '🎯', action: () => pushBuildQueue('sniperTurret', 1) },
-        { rarity: 'epic', name: '劇毒陷阱 (x2)', desc: '使經過的敵人中毒，持續 5 秒受到傷害。', icon: '🧪', action: () => pushBuildQueue('poisonTrap', 2) },
+        { rarity: 'epic', name: '劇毒陷阱 (x3)', desc: '使經過的敵人中毒，持續 5 秒受到傷害（觸發範圍更大）。', icon: '🧪', action: () => pushBuildQueue('poisonTrap', 3) },
         { rarity: 'rare', name: '骷髏弓手墓碑 (x1)', desc: '產生遠程骷髏弓手，箭術精湛。', icon: '💀', action: () => pushBuildQueue('archerSpawner', 1) },
         { rarity: 'epic', name: '地獄火熔爐 (x1)', desc: '產生地獄火元素，衝向敵人自爆造成範圍傷害。', icon: '🔥', action: () => pushBuildQueue('bomberSpawner', 1) },
         { rarity: 'epic', name: '暗影神殿 (x1)', desc: '產生暗影祭司，為附近友軍提供治療。', icon: '💗', action: () => pushBuildQueue('priestSpawner', 1) }
