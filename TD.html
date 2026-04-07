@@ -18,6 +18,17 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.5); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.8); }
+
+        @media (max-width: 1280px) {
+            #damage-stats-panel { width: 14rem; font-size: 11px; }
+            #minion-stats-panel { width: 15rem; top: 15rem; }
+        }
+
+        @media (max-width: 1024px) {
+            #damage-stats-panel, #minion-stats-panel { display: none; }
+            #ui-layer { padding: 0.75rem; }
+            #wave-info { font-size: 1rem !important; }
+        }
     </style>
 </head>
 <body>
@@ -95,11 +106,11 @@
     </div>
 
     <!-- 新手教學畫面 -->
-    <div id="tutorial-overlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden pointer-events-auto z-50">
-        <div class="bg-gray-900 p-8 rounded-2xl border-2 border-purple-600 shadow-[0_0_40px_rgba(168,85,247,0.5)] max-w-3xl w-full mx-4">
-            <h2 class="text-3xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-yellow-400 mb-6">📖 新手教學</h2>
+    <div id="tutorial-overlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden pointer-events-auto z-50 overflow-y-auto py-4">
+        <div class="bg-gray-900 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-purple-600 shadow-[0_0_40px_rgba(168,85,247,0.5)] max-w-3xl w-full mx-3 sm:mx-4 max-h-[92vh] overflow-y-auto">
+            <h2 class="text-2xl sm:text-3xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-yellow-400 mb-6">📖 新手教學</h2>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <!-- 移動 -->
                 <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700">
                     <div class="flex items-center mb-2">
@@ -200,7 +211,7 @@
                     <input type="checkbox" id="skip-tutorial-check" class="w-4 h-4 accent-purple-500">
                     <span class="text-gray-400 text-sm">下次跳過教學</span>
                 </label>
-                <button onclick="closeTutorial()" class="px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white text-xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
+                <button onclick="closeTutorial()" class="px-6 sm:px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white text-base sm:text-xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
                     我知道了，開始遊戲！
                 </button>
             </div>
@@ -208,9 +219,9 @@
     </div>
 
     <!-- 開始畫面 -->
-    <div id="start-screen" class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-900 via-black to-black flex flex-col items-center justify-center pointer-events-auto z-50">
-        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-600 mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">魔王守衛戰：流派覺醒</h1>
-        <p class="text-gray-400 text-lg mb-6 max-w-2xl text-center leading-relaxed">
+    <div id="start-screen" class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-900 via-black to-black flex flex-col items-center justify-center pointer-events-auto z-50 px-4">
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-red-600 mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] text-center">魔王守衛戰：流派覺醒</h1>
+        <p class="text-gray-400 text-sm sm:text-base lg:text-lg mb-6 max-w-2xl text-center leading-relaxed">
             勇者軍團兵臨城下。<br>
             利用防禦工事、工人群與深淵魔法保護核心。<br>
             你將成為元素法師？還是招喚死靈大軍？<br>撐過 20 波，擊退冒險者，讓世界再次陷入絕望！
@@ -224,19 +235,19 @@
         </div>
         
         <div class="flex flex-col space-y-3">
-            <button onclick="startGame()" class="px-10 py-4 bg-purple-700 hover:bg-purple-600 text-white text-2xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
+            <button onclick="startGame()" class="px-8 sm:px-10 py-3 sm:py-4 bg-purple-700 hover:bg-purple-600 text-white text-lg sm:text-2xl font-bold rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all transform hover:scale-105 border-2 border-purple-400">
                 開始守衛
             </button>
-            <button onclick="openSoulShop()" class="px-10 py-3 bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600 text-white text-lg font-bold rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all transform hover:scale-105 border border-indigo-400">
+            <button onclick="openSoulShop()" class="px-8 sm:px-10 py-3 bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600 text-white text-base sm:text-lg font-bold rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all transform hover:scale-105 border border-indigo-400">
                 👻 靈魂商店
             </button>
         </div>
     </div>
 
     <!-- 升級畫面 -->
-    <div id="levelup-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden pointer-events-auto z-40">
-        <h1 class="text-4xl font-bold text-yellow-400 mb-8 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]">升級！選擇一項卡片</h1>
-        <div id="upgrade-container" class="flex space-x-6"></div>
+    <div id="levelup-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden pointer-events-auto z-40 overflow-y-auto py-4">
+        <h1 class="text-2xl sm:text-4xl font-bold text-yellow-400 mb-8 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] text-center px-4">升級！選擇一項卡片</h1>
+        <div id="upgrade-container" class="flex flex-wrap justify-center gap-4 sm:gap-6 px-4"></div>
         <div class="mt-10 flex flex-col items-center">
             <button id="confirm-upgrade-btn" onclick="confirmUpgrade()" class="hidden px-10 py-3 mb-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-full shadow-[0_0_15px_rgba(34,197,94,0.5)] transition-all border border-green-300 text-xl">
                 ✔️ 確認選擇
@@ -249,8 +260,8 @@
     </div>
 
     <!-- 暫停畫面 -->
-    <div id="pause-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden pointer-events-auto z-50">
-        <h1 class="text-6xl font-black text-white mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">遊戲暫停</h1>
+    <div id="pause-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden pointer-events-auto z-50 px-4">
+        <h1 class="text-4xl sm:text-6xl font-black text-white mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">遊戲暫停</h1>
         
         <!-- 音量控制滑桿 -->
         <div class="mb-8 w-72 bg-gray-900/80 p-5 rounded-xl border border-gray-600 shadow-inner">
@@ -268,9 +279,9 @@
     </div>
 
     <!-- 結束畫面 -->
-    <div id="overlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden pointer-events-auto z-50">
-        <div class="text-center bg-gray-900 p-10 rounded-2xl border-2 border-gray-700 shadow-[0_0_30px_rgba(0,0,0,1)] max-w-2xl w-full flex flex-col items-center">
-            <h1 id="overlay-title" class="text-5xl font-black mb-2"></h1>
+    <div id="overlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden pointer-events-auto z-50 overflow-y-auto py-4">
+        <div class="text-center bg-gray-900 p-4 sm:p-8 lg:p-10 rounded-2xl border-2 border-gray-700 shadow-[0_0_30px_rgba(0,0,0,1)] max-w-2xl w-full mx-3 sm:mx-4 max-h-[92vh] overflow-y-auto flex flex-col items-center">
+            <h1 id="overlay-title" class="text-3xl sm:text-5xl font-black mb-2"></h1>
             <p id="overlay-desc" class="text-gray-300 text-lg mb-6"></p>
             
             <!-- 靈魂獲取區塊 -->
@@ -321,10 +332,10 @@
     </div>
 
     <!-- 靈魂商店畫面 -->
-    <div id="soul-shop-overlay" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center hidden pointer-events-auto z-50 overflow-y-auto py-8">
-        <div class="bg-gray-900 p-8 rounded-2xl border-2 border-purple-600 shadow-[0_0_40px_rgba(168,85,247,0.5)] max-w-4xl w-full mx-4">
+    <div id="soul-shop-overlay" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center hidden pointer-events-auto z-50 overflow-y-auto py-4 sm:py-8">
+        <div class="bg-gray-900 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-purple-600 shadow-[0_0_40px_rgba(168,85,247,0.5)] max-w-4xl w-full mx-3 sm:mx-4 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">👻 靈魂商店</h2>
+                <h2 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">👻 靈魂商店</h2>
                 <div class="flex items-center space-x-2 bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500">
                     <span class="text-2xl">👻</span>
                     <span id="shop-soul-count" class="text-2xl font-bold text-purple-300">0</span>
