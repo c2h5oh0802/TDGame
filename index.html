@@ -653,11 +653,12 @@ const metaSystem = {
         extraMinionMax: false, // 召喚精通：小兵上限 +1
         luckyBlessing: false,  // 幸運祝福：稀有卡機率 +10%
         endlessMode: false,    // 無盡挑戰：解鎖無盡模式
-        
-        // 角色解鎖
-        charSummoner: false,   // 深淵召喚師
-        charDestroyer: false,  // 毀滅領主
-    },
+         
+         // 角色解鎖
+         charSummoner: false,   // 深淵召喚師
+         charDestroyer: false,  // 毀滅領主
+         charSentinel: false,   // 守護者
+     },
     stats: {
         totalRuns: 0,          // 總遊玩次數
         bestWave: 0,           // 最高波數
@@ -725,6 +726,29 @@ const characterData = {
             desc: '發射穿透一切的強力光束 3 秒',
             cooldown: 30,
             action: 'destructionBeam',
+        },
+    },
+    sentinel: {
+        id: 'sentinel',
+        name: '守護者',
+        icon: '🛡️',
+        desc: '建築HP+50%、升級費用-30%，但攻擊力-25%',
+        unlockCondition: 'purchase', // 靈魂商店購買
+        unlockCost: 250,
+        passive: {
+            damageMultiplier: 0.75,      // 攻擊力 -25%
+            minionDamageMultiplier: 1.0,
+            minionCapacityBonus: 0,
+            buildingHpMultiplier: 1.5,   // 建築 HP +50%
+            attackSpeedMultiplier: 1.0,
+            buildingCostReduction: 0.7,  // 建造費用 -30% (升級/維修時適用)
+        },
+        skill: {
+            name: '堡壘化',
+            icon: '🏰',
+            desc: '4秒內所有建築獲得+50% HP並反彈30%傷害',
+            cooldown: 40,
+            action: 'fortify',
         },
     },
 };
@@ -1058,15 +1082,16 @@ const playerStats = {
     necromancy: false,
     buildingHpMultiplier: 1.0, 
     extraMinionCapacity: 0,
-    bonusGoldDrop: 0,
-    lifeSteal: 0,
-    spreadShot: false,
-    explosiveRounds: false,
-    homingMissiles: false,
-    orbitalLevel: 0,
-    toxicTrail: false,
-    minionDamageMultiplier: 1.0  // 角色被動：小兵傷害加成
-};
+     bonusGoldDrop: 0,
+     lifeSteal: 0,
+     spreadShot: false,
+     explosiveRounds: false,
+     homingMissiles: false,
+     orbitalLevel: 0,
+     toxicTrail: false,
+     minionDamageMultiplier: 1.0,  // 角色被動：小兵傷害加成
+     buildingCostReduction: 1.0    // 角色被動：建築費用減少（1.0 = 正常價格，0.7 = 便宜 30%）
+ };
 
 let buildQueue = [];
 let currentBuildType = null;
@@ -1152,20 +1177,21 @@ function beginActualGame() {
     playerStats.thorns = 0;
     playerStats.corpseExplosion = false;
     playerStats.wallExplosion = false;
-    playerStats.auraHeal = false;
-    playerStats.minionFrenzy = false;
-    playerStats.necromancy = false;
-    playerStats.buildingHpMultiplier = 1.0;
-    playerStats.extraMinionCapacity = 0;
-    playerStats.bonusGoldDrop = 0;
-    playerStats.lifeSteal = 0;
-    playerStats.spreadShot = false;
-    playerStats.explosiveRounds = false;
-    playerStats.homingMissiles = false;
-    playerStats.orbitalLevel = 0;
-    playerStats.toxicTrail = false;
-    playerStats.minionDamageMultiplier = 1.0;  // 角色被動重置
-    
+     playerStats.auraHeal = false;
+     playerStats.minionFrenzy = false;
+     playerStats.necromancy = false;
+     playerStats.buildingHpMultiplier = 1.0;
+     playerStats.extraMinionCapacity = 0;
+     playerStats.bonusGoldDrop = 0;
+     playerStats.lifeSteal = 0;
+     playerStats.spreadShot = false;
+     playerStats.explosiveRounds = false;
+     playerStats.homingMissiles = false;
+     playerStats.orbitalLevel = 0;
+     playerStats.toxicTrail = false;
+     playerStats.minionDamageMultiplier = 1.0;  // 角色被動重置
+     playerStats.buildingCostReduction = 1.0;   // 角色被動重置
+     
     // 應用永久升級（先應用升級，再設定 HP）
     applyMetaUpgrades();
     
@@ -1276,33 +1302,38 @@ function applyMetaUpgrades() {
     applyCharacterPassives();
 }
 
-function applyCharacterPassives() {
-    const char = characterData[selectedCharacter];
-    if (!char || !char.passive) return;
-    
-    const passive = char.passive;
-    
-    // 攻擊力加成（乘算）
-    playerStats.damageMultiplier *= passive.damageMultiplier;
-    
-    // 射速加成（乘算）
-    playerStats.attackSpeedMultiplier *= passive.attackSpeedMultiplier;
-    
-    // 建築 HP 加成
-    playerStats.buildingHpMultiplier *= passive.buildingHpMultiplier;
-    
-    // 小兵上限加成
-    playerStats.extraMinionCapacity += passive.minionCapacityBonus;
-    
-    // 小兵傷害加成（需要新增到 playerStats）
-    if (!playerStats.minionDamageMultiplier) playerStats.minionDamageMultiplier = 1.0;
-    playerStats.minionDamageMultiplier *= passive.minionDamageMultiplier;
-    
-    // 重置技能狀態
-    characterSkillCooldown = 0;
-    characterSkillActive = false;
-    characterSkillTimer = 0;
-}
+ function applyCharacterPassives() {
+     const char = characterData[selectedCharacter];
+     if (!char || !char.passive) return;
+     
+     const passive = char.passive;
+     
+     // 攻擊力加成（乘算）
+     playerStats.damageMultiplier *= passive.damageMultiplier;
+     
+     // 射速加成（乘算）
+     playerStats.attackSpeedMultiplier *= passive.attackSpeedMultiplier;
+     
+     // 建築 HP 加成
+     playerStats.buildingHpMultiplier *= passive.buildingHpMultiplier;
+     
+     // 小兵上限加成
+     playerStats.extraMinionCapacity += passive.minionCapacityBonus;
+     
+     // 小兵傷害加成（需要新增到 playerStats）
+     if (!playerStats.minionDamageMultiplier) playerStats.minionDamageMultiplier = 1.0;
+     playerStats.minionDamageMultiplier *= passive.minionDamageMultiplier;
+     
+     // 建築費用減少加成（守護者被動）
+     if (passive.buildingCostReduction) {
+         playerStats.buildingCostReduction *= passive.buildingCostReduction;
+     }
+     
+     // 重置技能狀態
+     characterSkillCooldown = 0;
+     characterSkillActive = false;
+     characterSkillTimer = 0;
+ }
 
 function updateStartScreenUI() {
     document.getElementById('start-soul-count').innerText = metaSystem.souls;
@@ -1737,15 +1768,17 @@ function useCharacterSkill() {
         return;
     }
     
-    // 執行技能
-    SoundManager.play('spell');
-    
-    if (char.skill.action === 'summonWave') {
-        executeSkillSummonWave();
-    } else if (char.skill.action === 'destructionBeam') {
-        executeSkillDestructionBeam();
-    }
-    
+     // 執行技能
+     SoundManager.play('spell');
+     
+     if (char.skill.action === 'summonWave') {
+         executeSkillSummonWave();
+     } else if (char.skill.action === 'destructionBeam') {
+         executeSkillDestructionBeam();
+     } else if (char.skill.action === 'fortify') {
+         executeSkillFortify();
+     }
+     
     // 設定冷卻
     characterSkillCooldown = char.skill.cooldown;
     
@@ -1774,14 +1807,32 @@ function executeSkillSummonWave() {
 }
 
 function executeSkillDestructionBeam() {
-    // 毀滅光束：啟動 3 秒的強力光束模式
-    characterSkillActive = true;
-    characterSkillTimer = 3.0;
-    
-    // 視覺提示
-    spawnParticles(player.x, player.y, '#ef4444', 20, 5, 80);
-}
+     // 毀滅光束：啟動 3 秒的強力光束模式
+     characterSkillActive = true;
+     characterSkillTimer = 3.0;
+     
+     // 視覺提示
+     spawnParticles(player.x, player.y, '#ef4444', 20, 5, 80);
+ }
 
+ function executeSkillFortify() {
+     // 堡壘化：4秒內所有建築獲得 +50% HP 並反彈 30% 傷害
+     characterSkillActive = true;
+     characterSkillTimer = 4.0;
+     
+     // 為所有建築應用堡壘化效果
+     for (let building of buildings) {
+         building.fortifyActive = true;
+         building.fortifyEndTime = characterSkillTimer;
+         
+         // 視覺提示：建築周圍藍色粒子
+         spawnParticles(building.x, building.y, '#3b82f6', 8, 2, 40);
+     }
+     
+     // 玩家周圍藍色光效
+     spawnParticles(player.x, player.y, '#60a5fa', 15, 4, 80);
+ }
+ 
 function updateCharacterSkill(dt) {
     // 更新技能冷卻
     if (characterSkillCooldown > 0) {
@@ -1789,42 +1840,58 @@ function updateCharacterSkill(dt) {
         if (characterSkillCooldown < 0) characterSkillCooldown = 0;
     }
     
-    // 更新技能持續效果
-    if (characterSkillActive && characterSkillTimer > 0) {
-        characterSkillTimer -= dt;
-        
-        // 毀滅光束效果：持續發射穿透光束
-        if (selectedCharacter === 'destroyer') {
-            // 每幀發射光束粒子
-            const angle = Math.atan2(input.worldMouseY - player.y, input.worldMouseX - player.x);
-            
-            // 發射超強投射物
-            if (Math.random() < 0.3) { // 每幀 30% 機率
-                const beamDamage = 50 * playerStats.damageMultiplier;
-                const proj = new Projectile(
-                    player.x, player.y, 
-                    angle + (Math.random() - 0.5) * 0.1, 
-                    beamDamage, 
-                    '#ff4444', 
-                    false, 
-                    10,  // 大尺寸
-                    1500, // 長射程
-                    999,  // 無限穿透
-                    'player'
-                );
-                proj.isPlayerProj = true;
-                projectiles.push(proj);
-            }
-            
-            // 光束視覺效果
-            spawnParticles(player.x, player.y, '#ff6666', 2, 3, 30);
-        }
-        
-        if (characterSkillTimer <= 0) {
-            characterSkillActive = false;
-            characterSkillTimer = 0;
-        }
-    }
+     // 更新技能持續效果
+     if (characterSkillActive && characterSkillTimer > 0) {
+         characterSkillTimer -= dt;
+         
+         // 毀滅光束效果：持續發射穿透光束
+         if (selectedCharacter === 'destroyer') {
+             // 每幀發射光束粒子
+             const angle = Math.atan2(input.worldMouseY - player.y, input.worldMouseX - player.x);
+             
+             // 發射超強投射物
+             if (Math.random() < 0.3) { // 每幀 30% 機率
+                 const beamDamage = 50 * playerStats.damageMultiplier;
+                 const proj = new Projectile(
+                     player.x, player.y, 
+                     angle + (Math.random() - 0.5) * 0.1, 
+                     beamDamage, 
+                     '#ff4444', 
+                     false, 
+                     10,  // 大尺寸
+                     1500, // 長射程
+                     999,  // 無限穿透
+                     'player'
+                 );
+                 proj.isPlayerProj = true;
+                 projectiles.push(proj);
+             }
+             
+             // 光束視覺效果
+             spawnParticles(player.x, player.y, '#ff6666', 2, 3, 30);
+         }
+         
+         // 堡壘化效果：更新建築狀態
+         if (selectedCharacter === 'sentinel') {
+             for (let building of buildings) {
+                 if (building.fortifyActive) {
+                     building.fortifyEndTime -= dt;
+                     if (building.fortifyEndTime <= 0) {
+                         building.fortifyActive = false;
+                     }
+                 }
+             }
+         }
+         
+         if (characterSkillTimer <= 0) {
+             characterSkillActive = false;
+             characterSkillTimer = 0;
+             // 清除堡壘化效果
+             for (let building of buildings) {
+                 building.fortifyActive = false;
+             }
+         }
+     }
     
     // 更新技能 UI
     updateSkillUI();
@@ -2543,26 +2610,43 @@ class Worker extends Entity {
 
 // --- 建築系統 ---
 class Building {
-    constructor(gridX, gridY, maxHp, color) {
-        this.gridX = gridX; this.gridY = gridY; this.size = gridSize;
-        this.x = gridX * gridSize + gridSize / 2; this.y = gridY * gridSize + gridSize / 2;
-        this.maxHp = maxHp * playerStats.buildingHpMultiplier; 
-        this.hp = this.maxHp; 
-        this.color = color; this.isDead = false;
-        this.level = 1; this.maxLevel = 5; this.hitFlash = 0;
-        this.isWall = false;
-        this.isPassable = false;
-        this.hpGrowth = 100; 
-        this.evolved = false;
-        this.evolutionName = '';
-        this.damageReduction = 0;
-        this.passiveRegen = 0;
-    }
+     constructor(gridX, gridY, maxHp, color) {
+         this.gridX = gridX; this.gridY = gridY; this.size = gridSize;
+         this.x = gridX * gridSize + gridSize / 2; this.y = gridY * gridSize + gridSize / 2;
+         this.maxHp = maxHp * playerStats.buildingHpMultiplier; 
+         this.hp = this.maxHp; 
+         this.color = color; this.isDead = false;
+         this.level = 1; this.maxLevel = 5; this.hitFlash = 0;
+         this.isWall = false;
+         this.isPassable = false;
+         this.hpGrowth = 100; 
+         this.evolved = false;
+         this.evolutionName = '';
+         this.damageReduction = 0;
+         this.passiveRegen = 0;
+         // 堡壘化效果屬性
+         this.fortifyActive = false;
+         this.fortifyEndTime = 0;
+         this.fortifyHpBonus = 1.5;      // 堡壘化時 HP +50%
+         this.fortifyDamageReflect = 0.3; // 堡壘化時反彈 30% 傷害
+     }
     get upgradeCost() { 
         const costs = [0, 30, 75, 150, 300];
-        return costs[this.level] || 300; 
+        let baseCost = costs[this.level] || 300;
+        // 應用守護者的升級費用減少
+        if (playerStats.buildingCostReduction) {
+            baseCost = Math.ceil(baseCost * playerStats.buildingCostReduction);
+        }
+        return baseCost; 
     } 
-    get repairCost() { return this.level * 10; }
+    get repairCost() { 
+        let baseCost = this.level * 10;
+        // 應用守護者的維修費用減少
+        if (playerStats.buildingCostReduction) {
+            baseCost = Math.ceil(baseCost * playerStats.buildingCostReduction);
+        }
+        return baseCost;
+    }
     levelUp() {
         if (this.level < this.maxLevel) {
             this.level++;
@@ -2577,53 +2661,71 @@ class Building {
             this.hp = Math.min(this.maxHp, this.hp + this.passiveRegen * dt);
         }
     }
-    takeDamage(amount) {
-        const reduced = amount * (1 - this.damageReduction);
-        this.hp -= reduced;
-        this.hitFlash = 0.1;
-        floatingTexts.push(new FloatingText(this.x, this.y - 20, Math.ceil(reduced), '#ef4444'));
+     takeDamage(amount) {
+         let reduced = amount * (1 - this.damageReduction);
+         
+         // 堡壘化效果：減少傷害並反彈
+         if (this.fortifyActive) {
+             reduced *= 0.5; // 堡壘化時傷害 -50%
+             
+             // 反彈傷害給所有附近敵人
+             const reflectDamage = amount * this.fortifyDamageReflect;
+             enemies.forEach(e => {
+                 if (!e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 200) {
+                     const actual = e.takeDamage(reflectDamage, '#60a5fa');
+                     recordDamage('fortifyReflect', actual);
+                 }
+             });
+             
+             // 視覺效果
+             spawnParticles(this.x, this.y, '#60a5fa', 4, 1, 30);
+         }
+         
+         this.hp -= reduced;
+         this.hitFlash = 0.1;
+         floatingTexts.push(new FloatingText(this.x, this.y - 20, Math.ceil(reduced), '#ef4444'));
 
-        if (this.thornsDamage) {
-            enemies.forEach(e => {
-                if (!e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 90) {
-                    const actual = e.takeDamage(this.thornsDamage, '#84cc16');
-                    recordDamage('buildingThorns', actual);
-                    if (this.entangleOnHit) {
-                        e.chillTimer = Math.max(e.chillTimer, this.entangleOnHit);
-                    }
-                }
-            });
-        }
+         if (this.thornsDamage) {
+             enemies.forEach(e => {
+                 if (!e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 90) {
+                     const actual = e.takeDamage(this.thornsDamage, '#84cc16');
+                     recordDamage('buildingThorns', actual);
+                     if (this.entangleOnHit) {
+                         e.chillTimer = Math.max(e.chillTimer, this.entangleOnHit);
+                     }
+                 }
+             });
+         }
 
-        if (this.shockwaveDamage) {
-            enemies.forEach(e => {
-                if (!e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 120) {
-                    const actual = e.takeDamage(this.shockwaveDamage, '#f59e0b');
-                    recordDamage('buildingShockwave', actual);
-                    if (this.shockKnockback) {
-                        const a = Math.atan2(e.y - this.y, e.x - this.x);
-                        e.x += Math.cos(a) * this.shockKnockback;
-                        e.y += Math.sin(a) * this.shockKnockback;
-                    }
-                }
-            });
-            spawnParticles(this.x, this.y, '#f59e0b', 8, 3, 80);
-        }
+         if (this.shockwaveDamage) {
+             enemies.forEach(e => {
+                 if (!e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 120) {
+                     const actual = e.takeDamage(this.shockwaveDamage, '#f59e0b');
+                     recordDamage('buildingShockwave', actual);
+                     if (this.shockKnockback) {
+                         const a = Math.atan2(e.y - this.y, e.x - this.x);
+                         e.x += Math.cos(a) * this.shockKnockback;
+                         e.y += Math.sin(a) * this.shockKnockback;
+                     }
+                 }
+             });
+             spawnParticles(this.x, this.y, '#f59e0b', 8, 3, 80);
+         }
 
-        if (this.hp <= 0) { 
-            this.isDead = true; 
-            spawnParticles(this.x, this.y, '#555', 20, 8, 100); 
-            if (this.isWall && playerStats.wallExplosion) {
-                spawnParticles(this.x, this.y, '#ef4444', 40, 8, 200);
-                enemies.forEach(e => {
-                    if (Math.hypot(e.x - this.x, e.y - this.y) < 150) {
-                        let actual = e.takeDamage(200, '#ef4444'); 
-                        recordDamage('wallExplosion', actual); 
-                    }
-                });
-            }
-        }
-    }
+         if (this.hp <= 0) { 
+             this.isDead = true; 
+             spawnParticles(this.x, this.y, '#555', 20, 8, 100); 
+             if (this.isWall && playerStats.wallExplosion) {
+                 spawnParticles(this.x, this.y, '#ef4444', 40, 8, 200);
+                 enemies.forEach(e => {
+                     if (Math.hypot(e.x - this.x, e.y - this.y) < 150) {
+                         let actual = e.takeDamage(200, '#ef4444'); 
+                         recordDamage('wallExplosion', actual); 
+                     }
+                 });
+             }
+         }
+     }
     draw(ctx) {
         ctx.save(); ctx.translate(this.gridX * gridSize, this.gridY * gridSize);
         ctx.fillStyle = this.hitFlash > 0 ? '#fff' : this.color; 
